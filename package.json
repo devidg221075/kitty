@@ -1,0 +1,12 @@
+{
+  "name": "kitty-sito",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sito statico KITTY S.r.l. (www.kitty.it)",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --serve",
+    "check": "node build.mjs --strict"
+  }
+}
