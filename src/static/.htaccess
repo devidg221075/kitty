@@ -1,0 +1,54 @@
+# Kitty – www.kitty.it  (Apache)
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# 1) HTTPS e www
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} !^www\. [NC]
+RewriteRule ^ https://www.kitty.it%{REQUEST_URI} [L,R=301]
+
+# 2) vecchia versione inglese: finché non c'è l'EN, /?lang=en -> home
+RewriteCond %{QUERY_STRING} (^|&)lang=en(&|$) [NC]
+RewriteRule ^$ /? [L,R=301]
+
+# 3) vecchi tag del portfolio WordPress -> collezione corrispondente
+RewriteRule ^portfolio-tag/lady/?$          /lady/         [L,R=301]
+RewriteRule ^portfolio-tag/baby/?$          /baby/         [L,R=301]
+RewriteRule ^portfolio-tag/bangles/?$       /baby-bangles/ [L,R=301]
+RewriteRule ^portfolio-tag/fantasy/?$       /fantasy/      [L,R=301]
+RewriteRule ^portfolio-tag/fantasy-eng/?$   /fantasy/      [L,R=301]
+RewriteRule ^portfolio-tag/full-gold/?$     /full-gold/    [L,R=301]
+RewriteRule ^portfolio-tag/full-classic/?$  /full-gold/    [L,R=301]
+RewriteRule ^portfolio-tag/lightness/?$     /lightness/    [L,R=301]
+RewriteRule ^portfolio-tag/rosari/?$        /rosari/       [L,R=301]
+RewriteRule ^portfolio-tag/                 /collezioni/   [L,R=301]
+</IfModule>
+
+# Compressione
+<IfModule mod_deflate.c>
+AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/xml application/json
+</IfModule>
+
+# Cache: asset statici lunga (CSS/JS portano ?v=hash), HTML sempre rivalidato
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType image/webp "access plus 1 year"
+ExpiresByType image/jpeg "access plus 1 year"
+ExpiresByType image/png  "access plus 1 year"
+ExpiresByType font/woff2 "access plus 1 year"
+ExpiresByType text/css "access plus 1 year"
+ExpiresByType application/javascript "access plus 1 year"
+ExpiresByType text/javascript "access plus 1 year"
+ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+<IfModule mod_headers.c>
+<FilesMatch "\.(webp|jpe?g|png|woff2|css|js)$">
+Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+Header set X-Content-Type-Options "nosniff"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

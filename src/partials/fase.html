@@ -1,0 +1,15 @@
+{{> page-head}}
+<section class="wrap fase">
+  <!-- BOZZA DA APPROVARE: testo proposto, il sito attuale per questa pagina ha solo titolo e foto -->
+  <p class="fase__text">{{text}}</p>
+  {{gallery:{{slug}}|{{altp}}|gallery--wide}}
+</section>
+<nav class="more wrap" aria-label="Le fasi della lavorazione">
+  <h2 class="more__title">Dal disegno al gioiello</h2>
+  <ul class="more__list">
+    <li><a href="/design/" {{cur:/design/}}>Design</a></li>
+    <li><a href="/progettazione/" {{cur:/progettazione/}}>Progettazione</a></li>
+    <li><a href="/lavorazione/" {{cur:/lavorazione/}}>Lavorazione</a></li>
+    <li><a href="/produzione/" {{cur:/produzione/}}>Produzione</a></li>
+  </ul>
+</nav>

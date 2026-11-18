@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, readdirSync, statSync, createReadStream } from 'node:fs';
 import { join, dirname, extname, relative, sep } from 'node:path';
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,30 @@ for (const f of readdirSync(join(SRC, 'partials'))) {
 const manifestFile = join(SRC, 'img/foto/manifest.json');
 const manifest = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {};
 
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+// <picture> WebP con srcset + fallback JPG
+function picture(key, alt = '', sizes = '100vw', cls = '', loading = 'lazy') {
+  const m = manifest[key];
+  if (!m) throw new Error(`Foto non in manifest: ${key} (lancia npm run img)`);
+  const srcset = m.widths.map((w) => `/img/foto/${key}-${w}.webp ${w}w`).join(', ');
+  const load = loading === 'eager' ? 'fetchpriority="high"' : 'loading="lazy"';
+  return `<picture><source type="image/webp" srcset="${srcset}" sizes="${sizes}"><img src="/img/foto/${key}-fallback.jpg" alt="${esc(alt)}" width="${m.w}" height="${m.h}" ${load} decoding="async"${cls ? ` class="${cls}"` : ''}></picture>`;
+}
+
+// Galleria con lightbox: tutte le foto di una cartella (esclude le copertine)
+function gallery(folder, altPrefix, variant = '') {
+  const keys = Object.keys(manifest).filter((k) => k.startsWith(folder + '/') && !k.endsWith('-cover')).sort();
+  if (!keys.length) throw new Error(`Nessuna foto per la galleria: ${folder}`);
+  const items = keys.map((k, i) => {
+    const m = manifest[k];
+    const big = m.widths[m.widths.length - 1];
+    const alt = `${altPrefix} – foto ${i + 1} di ${keys.length}`;
+    return `<li><a class="gallery__item" href="/img/foto/${k}-${big}.webp" data-lightbox data-caption="${esc(alt)}">${picture(k, alt, '(min-width:1100px) 280px, (min-width:600px) 33vw, 50vw')}<span class="sr-only"> (ingrandisci)</span></a></li>`;
+  });
+  return `<ul class="gallery ${variant}" aria-label="Galleria: ${esc(altPrefix)}">\n${items.join('\n')}\n</ul>`;
+}
+
 function render(tpl, vars, depth = 0) {
   if (depth > 6) throw new Error('Partial annidati troppo in profondità');
   return tpl
@@ -35,22 +60,14 @@ function render(tpl, vars, depth = 0) {
       if (!(name in partials)) throw new Error(`Partial mancante: ${name}`);
       return render(partials[name], vars, depth + 1);
     })
-    // {{cur:/percorso/}} -> aria-current="page" se è la pagina corrente (o una sua sezione, con "~")
-    .replace(/\{\{cur:(~?)([^}]+)\}\}/g, (_, section, p) => {
-      const here = vars.path;
-      const on = section ? here.startsWith(p) && p !== '/' : here === p;
-      return on ? 'aria-current="page"' : '';
-    })
-    // {{foto:cartella/nome|alt|sizes|classe|lazy}} -> <picture> WebP con srcset + fallback JPG
-    .replace(/\{\{foto:([^}]+)\}\}/g, (_, spec) => {
-      const [key, alt = '', sizes = '100vw', cls = '', loading = 'lazy'] = spec.split('|').map((s) => s.trim());
-      const m = manifest[key];
-      if (!m) throw new Error(`Foto non in manifest: ${key} (lancia npm run img)`);
-      const srcset = m.widths.map((w) => `/img/foto/${key}-${w}.webp ${w}w`).join(', ');
-      const load = loading === 'eager' ? 'fetchpriority="high"' : 'loading="lazy"';
-      return `<picture><source type="image/webp" srcset="${srcset}" sizes="${sizes}"><img src="/img/foto/${key}-fallback.jpg" alt="${alt}" width="${m.w}" height="${m.h}" ${load} decoding="async"${cls ? ` class="${cls}"` : ''}></picture>`;
-    })
-    .replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
+    // variabili (anche quelle del front matter) prima degli helper, così si possono annidare: {{foto:x/{{slug}}-01|...}}
+    .replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m))
+    // {{cur:/percorso/}} -> aria-current="page" se è la pagina corrente o la sua sezione (meta "section")
+    .replace(/\{\{cur:([^}]+)\}\}/g, (_, p) => (vars.path === p || vars.section === p ? 'aria-current="page"' : ''))
+    // {{foto:cartella/nome|alt|sizes|classe|lazy}}
+    .replace(/\{\{foto:([^}]+)\}\}/g, (_, spec) => picture(...spec.split('|').map((s) => s.trim())))
+    // {{gallery:cartella|prefisso alt|variante}}
+    .replace(/\{\{gallery:([^}]+)\}\}/g, (_, spec) => gallery(...spec.split('|').map((s) => s.trim())));
 }
 
 // ---------- pagine ----------
@@ -70,6 +87,11 @@ function parsePage(file) {
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 
+// versione (hash) di CSS e JS per la cache lunga
+const hashOf = (f) => createHash('md5').update(readFileSync(join(SRC, f))).digest('hex').slice(0, 8);
+const cssV = hashOf('css/main.css');
+const jsV = hashOf('js/main.js');
+
 const pages = [];
 for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) {
   const rel = relative(join(SRC, 'pages'), file).split(sep).join('/'); // es. lady/index.html
@@ -79,6 +101,8 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
   }
   const urlPath = rel === 'index.html' ? '/' : rel === '404.html' ? '/404.html' : '/' + rel.replace(/index\.html$/, '');
   const vars = {
+    ...meta,
+    cssV, jsV,
     path: urlPath,
     title: meta.title,
     description: meta.description,
@@ -87,6 +111,8 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
     robots: meta.robots || 'index,follow',
     bodyClass: meta.bodyClass || '',
     year: String(new Date().getFullYear()),
+    crumbMid: meta.parent ? `<li><a href="${meta.parent.split('|')[1]}">${meta.parent.split('|')[0]}</a></li>` : '',
+    leadHtml: meta.lead ? `<p class="page-head__lead">${meta.lead}</p>` : '',
   };
   const content = render(body, vars);
   const html = render(partials.layout, { ...vars, content });

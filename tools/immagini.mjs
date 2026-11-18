@@ -31,7 +31,7 @@ function convertOne(src, base) {
 
 const slugs = readdirSync(IN).filter((d) => statSync(join(IN, d)).isDirectory());
 for (const slug of slugs) {
-  const files = readdirSync(join(IN, slug)).filter((f) => /\.(jpe?g|png)$/i.test(f)).sort();
+  const files = readdirSync(join(IN, slug)).filter((f) => /\.(jpe?g|png)$/i.test(f) && !/parallax/i.test(f)).sort();
   mkdirSync(join(OUT, slug), { recursive: true });
   files.forEach((f, i) => {
     const name = slug === 'copertine' ? f.replace(extname(f), '') + '-cover' : `${slug}-${String(i + 1).padStart(2, '0')}`;

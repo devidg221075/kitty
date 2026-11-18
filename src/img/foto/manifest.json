@@ -1,14 +1,4 @@
 {
- "about-kitty/about-kitty-01": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
- },
  "baby/baby-01": {
   "w": 1024,
   "h": 768,
@@ -478,16 +468,6 @@
    1024
   ],
   "original": "DSC6715.jpg"
- },
- "design/design-06": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
  },
  "fantasy/fantasy-01": {
   "w": 1024,
@@ -1029,16 +1009,6 @@
   ],
   "original": "DSC6561.jpg"
  },
- "lavorazione/lavorazione-03": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
- },
  "le-fiere/le-fiere-01": {
   "w": 600,
   "h": 400,
@@ -1146,16 +1116,6 @@
   "original": "bracciale_DSC6613.jpg"
  },
  "premiere-2016/premiere-2016-03": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
- },
- "premiere-2016/premiere-2016-04": {
   "w": 1024,
   "h": 1065,
   "widths": [
@@ -1174,16 +1134,6 @@
    1280
   ],
   "original": "kitty-prewmio-premiere-2019.jpg"
- },
- "premiere-2019-menzione-speciale/premiere-2019-menzione-speciale-02": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
  },
  "produzione/produzione-01": {
   "w": 1024,
@@ -1235,16 +1185,6 @@
   ],
   "original": "DSC6591.jpg"
  },
- "produzione/produzione-06": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
- },
  "progettazione/progettazione-01": {
   "w": 1024,
   "h": 683,
@@ -1274,16 +1214,6 @@
    1024
   ],
   "original": "DSC6430.jpg"
- },
- "progettazione/progettazione-04": {
-  "w": 1920,
-  "h": 1200,
-  "widths": [
-   480,
-   960,
-   1600
-  ],
-  "original": "parallax-layers-1.jpg"
  },
  "rosari/rosari-01": {
   "w": 1024,

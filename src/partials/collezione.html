@@ -1,0 +1,24 @@
+{{> page-head}}
+<section class="wrap section" aria-label="Galleria collezione {{name}}">
+  {{gallery:{{slug}}|Collezione {{name}}|gallery--packshot}}
+</section>
+<section class="cta-band wrap" aria-labelledby="cta-titolo">
+  <div class="cta-band__inner">
+    <h2 id="cta-titolo">Ti interessa la collezione {{name}}?</h2>
+    <p>Scrivici: ti rispondiamo con tutte le informazioni.</p>
+    <a class="btn" href="/contatti/">Contattaci <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
+  </div>
+</section>
+<nav class="more wrap" aria-label="Altre collezioni">
+  <h2 class="more__title">Le altre collezioni</h2>
+  <ul class="more__list">
+    <li><a href="/lady/" {{cur:/lady/}}>Lady</a></li>
+    <li><a href="/baby/" {{cur:/baby/}}>Baby</a></li>
+    <li><a href="/fantasy/" {{cur:/fantasy/}}>Fantasy</a></li>
+    <li><a href="/full-gold/" {{cur:/full-gold/}}>Full Gold</a></li>
+    <li><a href="/lightness/" {{cur:/lightness/}}>Lightness</a></li>
+    <li><a href="/baby-bangles/" {{cur:/baby-bangles/}}>Baby Bangles</a></li>
+    <li><a href="/baby-pins/" {{cur:/baby-pins/}}>Baby Pins</a></li>
+    <li><a href="/rosari/" {{cur:/rosari/}}>Rosari</a></li>
+  </ul>
+</nav>
