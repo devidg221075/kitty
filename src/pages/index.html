@@ -16,9 +16,14 @@ bodyClass: home
     <div class="slider-nav" data-slider-nav></div>
   </div>
   <div class="hero__media slider" data-slider data-interval="6000" role="group" aria-roledescription="carosello" aria-label="Immagini in evidenza">
-    <!-- SEGNAPOSTO: immagine illustrativa ritagliata dalla tavola. Sostituire con le foto hero reali (altre slide = altri <div class="slide">). -->
     <div class="slide is-active">
-      <img src="/img/placeholder/hero.jpg" alt="Catena in oro lavorata a mano su seta" width="749" height="430" fetchpriority="high">
+      {{foto:copertine/lady-cover|Parure in oro con medaglione filigranato e pendenti, collezione Lady|(min-width:861px) 50vw, 100vw||eager}}
+    </div>
+    <div class="slide">
+      {{foto:copertine/baby-cover|Collana in oro con piccoli ciondoli smaltati colorati, collezione Baby|(min-width:861px) 50vw, 100vw}}
+    </div>
+    <div class="slide">
+      {{foto:copertine/full-gold-cover|Collana in oro con sfere sfaccettate in oro giallo e rosa, collezione Full Gold|(min-width:861px) 50vw, 100vw}}
     </div>
     <button class="slider-arrow slider-arrow--prev" type="button" aria-label="Slide precedente" data-prev><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 5 8l5 5"/></svg></button>
     <button class="slider-arrow slider-arrow--next" type="button" aria-label="Slide successiva" data-next><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3l5 5-5 5"/></svg></button>
