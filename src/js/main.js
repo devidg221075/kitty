@@ -36,7 +36,7 @@
   });
 
   // ---- Slider hero ----
-  document.querySelectorAll('[data-slider]').forEach((root) => {
+  const initSliders = () => document.querySelectorAll('[data-slider]').forEach((root) => {
     const slides = [...root.querySelectorAll('.slide')];
     const navBox = document.querySelector('[data-slider-nav]');
     const live = root.querySelector('[data-live]');
@@ -95,10 +95,13 @@
     paintPause();
     go(0, false);
   });
+  initSliders();
+  window.KittyPage = { ...(window.KittyPage || {}), sliders: initSliders };
 })();
 
 /* Kitty – lightbox gallerie + modulo contatti */
-(() => {
+function kittyInitGalleryAndForm() {
+  document.querySelectorAll('dialog.lb').forEach((d) => d.remove());
   // ---- Lightbox con <dialog> nativo (focus trap + Esc) ----
   const links = [...document.querySelectorAll('[data-lightbox]')];
   if (links.length && typeof HTMLDialogElement === 'function') {
@@ -200,4 +203,6 @@
   const esito = new URLSearchParams(location.search).get('esito');
   if (esito === 'ok') say('Grazie! La tua richiesta è stata inviata: ti risponderemo al più presto.', true);
   if (esito === 'errore') say('Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.', false);
-})();
+}
+kittyInitGalleryAndForm();
+window.KittyPage = { ...(window.KittyPage || {}), galleryAndForm: kittyInitGalleryAndForm };
