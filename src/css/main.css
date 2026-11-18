@@ -140,14 +140,15 @@ main:focus{outline:none}
 .collections__list{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
 .coll{display:flex;flex-direction:column;align-items:center;background:var(--blush);text-align:center;text-decoration:none;color:var(--testo);padding-bottom:14px;height:100%;transition:transform .2s,box-shadow .2s}
 .coll:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(201,61,107,.12);color:var(--testo)}
-.coll img{width:100%;height:118px;object-fit:cover}
+.coll picture{display:block;width:100%;height:118px;background:#fff;overflow:hidden}
+.coll img{width:100%;height:100%;object-fit:cover}
 .coll__kicker{font-size:12px;color:var(--testo-3);margin-top:10px}
 .coll__name{font-family:var(--serif);font-size:20px;line-height:1.2;padding:0 6px}
 .coll__rule{width:22px;height:2px;background:var(--rosa-accento);margin-top:8px}
 @media (max-width:1100px){
   .collections__list{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:10px;margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);scroll-padding-inline:var(--gut);scrollbar-width:thin;scrollbar-color:var(--rosa-soft) transparent}
   .collections__list>li{flex:0 0 150px;scroll-snap-align:start}
-  .coll img{height:120px}
+  .coll picture{height:120px}
 }
 
 /* ---------- Artigianalità ---------- */

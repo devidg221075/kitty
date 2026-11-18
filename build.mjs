@@ -25,6 +25,9 @@ for (const f of readdirSync(join(SRC, 'partials'))) {
   partials[f.replace(/\.html$/, '')] = readFileSync(join(SRC, 'partials', f), 'utf8');
 }
 
+const manifestFile = join(SRC, 'img/foto/manifest.json');
+const manifest = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {};
+
 function render(tpl, vars, depth = 0) {
   if (depth > 6) throw new Error('Partial annidati troppo in profondità');
   return tpl
@@ -37,6 +40,15 @@ function render(tpl, vars, depth = 0) {
       const here = vars.path;
       const on = section ? here.startsWith(p) && p !== '/' : here === p;
       return on ? 'aria-current="page"' : '';
+    })
+    // {{foto:cartella/nome|alt|sizes|classe|lazy}} -> <picture> WebP con srcset + fallback JPG
+    .replace(/\{\{foto:([^}]+)\}\}/g, (_, spec) => {
+      const [key, alt = '', sizes = '100vw', cls = '', loading = 'lazy'] = spec.split('|').map((s) => s.trim());
+      const m = manifest[key];
+      if (!m) throw new Error(`Foto non in manifest: ${key} (lancia npm run img)`);
+      const srcset = m.widths.map((w) => `/img/foto/${key}-${w}.webp ${w}w`).join(', ');
+      const load = loading === 'eager' ? 'fetchpriority="high"' : 'loading="lazy"';
+      return `<picture><source type="image/webp" srcset="${srcset}" sizes="${sizes}"><img src="/img/foto/${key}-fallback.jpg" alt="${alt}" width="${m.w}" height="${m.h}" ${load} decoding="async"${cls ? ` class="${cls}"` : ''}></picture>`;
     })
     .replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
 }
