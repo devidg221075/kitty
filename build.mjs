@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, rea
 import { join, dirname, extname, relative, sep } from 'node:path';
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +37,7 @@ function picture(key, alt = '', sizes = '100vw', cls = '', loading = 'lazy') {
   const m = manifest[key];
   if (!m) throw new Error(`Foto non in manifest: ${key} (lancia npm run img)`);
   const srcset = m.widths.map((w) => `/img/foto/${key}-${w}.webp ${w}w`).join(', ');
-  const load = loading === 'eager' ? 'fetchpriority="high"' : 'loading="lazy"';
+  const load = loading === 'eager' ? 'fetchpriority="high"' : loading === 'now' ? 'loading="eager"' : 'loading="lazy"';
   return `<picture><source type="image/webp" srcset="${srcset}" sizes="${sizes}"><img src="/img/foto/${key}-fallback.jpg" alt="${esc(alt)}" width="${m.w}" height="${m.h}" ${load} decoding="async"${cls ? ` class="${cls}"` : ''}></picture>`;
 }
 
@@ -53,7 +54,7 @@ function gallery(folder, altPrefix, variant = '', lang = 'it') {
     const m = manifest[k];
     const big = m.widths[m.widths.length - 1];
     const alt = `${altPrefix} – ${g.photo(i + 1, keys.length)}`;
-    return `<li><a class="gallery__item" href="/img/foto/${k}-${big}.webp" data-lightbox data-caption="${esc(alt)}">${picture(k, alt, '(min-width:1100px) 280px, (min-width:600px) 33vw, 50vw')}<span class="sr-only">${g.zoom}</span></a></li>`;
+    return `<li><a class="gallery__item" href="/img/foto/${k}-${big}.webp" data-lightbox data-caption="${esc(alt)}">${picture(k, alt, '(min-width:1100px) 280px, (min-width:600px) 33vw, 50vw', '', i < 4 ? 'eager' : i < 8 ? 'now' : 'lazy')}<span class="sr-only">${g.zoom}</span></a></li>`;
   });
   return `<ul class="gallery ${variant}" aria-label="${g.aria}: ${esc(altPrefix)}">\n${items.join('\n')}\n</ul>`;
 }
@@ -96,6 +97,7 @@ mkdirSync(DIST, { recursive: true });
 // versione (hash) di CSS e JS per la cache lunga
 const hashOf = (f) => createHash('md5').update(readFileSync(join(SRC, f))).digest('hex').slice(0, 8);
 const cssV = hashOf('css/main.css');
+const cssText = readFileSync(join(SRC, 'css/main.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*\n\s*/g, '\n').trim();
 const jsV = hashOf('js/main.js');
 
 const pages = [];
@@ -111,8 +113,17 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
   const itPath = lang === 'en' ? (urlPath.replace(/^\/en/, '') || '/') : urlPath;
   const enPath = lang === 'en' ? urlPath : (urlPath === '/' ? '/en/' : '/en' + urlPath);
   const altHref = is404 ? (lang === 'en' ? '/' : '/en/') : (lang === 'en' ? itPath : enPath);
+  const ogKey = (meta.image || 'copertine/lady-cover').trim();
+  const ogPath = `/img/og/${ogKey.replace(/\//g, '-')}.jpg`;
+  if (!existsSync(join(SRC, ogPath))) throw new Error(`Immagine social mancante per ${rel}: ${ogPath} (lancia npm run og)`);
+  const homeUrl = lang === 'en' ? '/en/' : '/';
+  const crumbs = is404 ? [] : [{ name: 'Home', url: homeUrl }];
+  if (!is404 && meta.parent) crumbs.push({ name: meta.parent.split('|')[0], url: meta.parent.split('|')[1] });
+  if (!is404 && urlPath !== homeUrl) crumbs.push({ name: (meta.h1 || meta.title.split(' | ')[0]).replace(/<[^>]+>/g, ''), url: urlPath });
+  const breadcrumbLd = crumbs.length > 1 ? `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: SITE + c.url })) })}</script>` : '';
   const vars = {
     ...meta,
+    breadcrumbLd,
     cssV, jsV,
     path: urlPath,
     lang,
@@ -124,7 +135,8 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
     title: meta.title,
     description: meta.description,
     canonical: SITE + urlPath,
-    ogImage: SITE + (meta.image || '/img/placeholder/hero.jpg'),
+    ogImage: SITE + ogPath,
+    ogAlt: meta.title.replace(/"/g, '&quot;'),
     robots: meta.robots || 'index,follow',
     bodyClass: meta.bodyClass || '',
     year: String(new Date().getFullYear()),
@@ -132,7 +144,8 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
     leadHtml: meta.lead ? `<p class="page-head__lead">${meta.lead}</p>` : '',
   };
   const content = render(body, vars);
-  const html = render(partials.layout, { ...vars, content });
+  let html = render(partials.layout, { ...vars, content });
+  if (process.env.INLINE_CSS !== '0') html = html.replace(/<link rel="stylesheet" href="\/css\/main\.css\?v=\w+">/, () => `<style>${cssText}</style>`);
   const out = join(DIST, rel);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, html);
@@ -203,7 +216,16 @@ if (args.has('--serve')) {
     if (!f.startsWith(DIST)) { res.writeHead(403); return res.end(); }
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
     if (!existsSync(f)) { res.writeHead(404, { 'content-type': types['.html'] }); return res.end(readFileSync(join(DIST, p.startsWith('/en/') ? 'en/404.html' : '404.html'), 'utf8')); }
-    res.writeHead(200, { 'content-type': types[extname(f)] || 'application/octet-stream' });
+    // come in produzione (.htaccess): compressione dei testi, cache lunga per gli asset, HTML sempre rivalidato
+    const ext = extname(f);
+    const headers = { 'content-type': types[ext] || 'application/octet-stream',
+      'cache-control': ext === '.html' || ext === '.xml' || ext === '.txt' ? 'no-cache' : 'public, max-age=31536000, immutable' };
+    if (/^(\.html|\.css|\.js|\.svg|\.xml|\.json|\.txt)$/.test(ext) && /gzip/.test(req.headers['accept-encoding'] || '')) {
+      const body = gzipSync(readFileSync(f));
+      res.writeHead(200, { ...headers, 'content-encoding': 'gzip', 'content-length': body.length, vary: 'Accept-Encoding' });
+      return res.end(body);
+    }
+    res.writeHead(200, headers);
     createReadStream(f).pipe(res);
   }).listen(port, () => console.log(`\nServer locale: http://localhost:${port}`));
 }

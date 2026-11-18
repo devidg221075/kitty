@@ -41,9 +41,11 @@ corrispondente, forza HTTPS e www, cache lunga per asset con hash.
 
 ## Design system (dalla tavola)
 Colori:
-- `--rosa-accento: #E85E89` → titoli grandi (≥ 24 px), filetti, pallini slider, decorazioni
-- `--rosa-testo: #C93D6B` → **pulsanti (sfondo) e testi/link piccoli**. Motivo: bianco su #E85E89 ha contrasto
-  ~3,8:1 (non passa WCAG AA sotto i 24 px); #C93D6B passa (~4,8:1). Hover: `#A82E57`
+- `--rosa-accento: #E85E89` → filetti, pallini slider, decorazioni (non testo)
+- `--rosa-titolo: #E4557F` → **titoli grandi (≥ 24 px)**. Motivo: #E85E89 sul fondo blush #FFF1F5 ha contrasto 3,0:1 (al limite);
+  #E4557F arriva a 3,24:1 (WCAG AA per testo grande: ≥ 3:1)
+- `--rosa-testo: #C23A67` → **pulsanti (sfondo) e testi/link piccoli**. Motivo: la tavola proponeva #C93D6B, ma su blush
+  arriva a 4,39:1 (sotto il 4,5:1 di WCAG AA per il testo piccolo); #C23A67 dà 4,68:1 su blush e 5,06:1 su bianco. Hover: `#A82E57`
 - `--rosa-soft: #F6B0C4` · `--blush: #FFF1F5` (fondi sezione/card) · `--bianco: #FFFDFD`
 - `--testo: #232024` · `--testo-2: #4A4246` · `--testo-3: #6B6266` (solo ≥ 12 px)
 - `--oro: #CDA86E` solo decorativo o su fondo scuro, mai testo su chiaro

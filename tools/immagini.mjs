@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Pipeline immagini: foto-originali/ -> src/img/foto/  (WebP 480/960/1600 + JPG fallback 960, qualità 80)
+// Pipeline immagini: foto-originali/ -> src/img/foto/  (WebP 480/960/1600 + JPG fallback 960, qualità 76)
 // Richiede ImageMagick (`convert`/`identify`). Uso: npm run img   (rielabora solo ciò che manca)
 import { execFileSync } from 'node:child_process';
 import { readdirSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
@@ -22,7 +22,7 @@ function convertOne(src, base) {
   const uniq = [...new Set(widths)].sort((a, b) => a - b);
   for (const tw of uniq) {
     const webp = `${base}-${tw}.webp`;
-    if (!existsSync(webp)) sh('convert', [src + '[0]', '-auto-orient', '-strip', '-resize', `${tw}x>`, '-quality', '80', webp]);
+    if (!existsSync(webp)) sh('convert', [src + '[0]', '-auto-orient', '-strip', '-resize', `${tw}x>`, '-quality', '76', '-define', 'webp:method=6', webp]);
   }
   const jpg = `${base}-fallback.jpg`;
   if (!existsSync(jpg)) sh('convert', [src + '[0]', '-auto-orient', '-strip', '-resize', '960x>', '-quality', '80', '-interlace', 'Plane', jpg]);

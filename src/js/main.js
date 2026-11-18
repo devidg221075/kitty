@@ -75,6 +75,10 @@ let T = KITTY_T[document.documentElement.lang === 'en' ? 'en' : 'it'];
     const live = root.querySelector('[data-live]');
     if (slides.length < 2) { root.classList.add('slider--single'); navBox?.remove(); return; }
 
+    // le slide dopo la prima non si scaricano finché la pagina non è pronta (così non competono con l'immagine LCP)
+    const undefer = () => slides.forEach((s) => s.removeAttribute('data-defer'));
+    if (document.readyState === 'complete') setTimeout(undefer, 800); else addEventListener('load', () => setTimeout(undefer, 800), { once: true });
+
     const interval = Number(root.dataset.interval) || 6000;
     let i = 0, timer = null, paused = false, hold = false;
 
@@ -101,6 +105,7 @@ let T = KITTY_T[document.documentElement.lang === 'en' ? 'en' : 'it'];
     pauseBtn.addEventListener('click', () => { paused = !paused; paintPause(); schedule(); });
 
     function go(n, announce = true) {
+      undefer();
       i = (n + slides.length) % slides.length;
       slides.forEach((s, k) => {
         s.classList.toggle('is-active', k === i);

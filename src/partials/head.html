@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
-<meta name="robots" content="{{robots}}">
+<meta name="robots" content="{{robots}}, max-image-preview:large">
 <meta name="theme-color" content="#E85E89">
 <link rel="canonical" href="{{canonical}}">
 {{hreflang}}
@@ -15,8 +15,13 @@
 <meta property="og:description" content="{{description}}">
 <meta property="og:url" content="{{canonical}}">
 <meta property="og:image" content="{{ogImage}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ogAlt}}">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="/fonts/playfair-display-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/jost-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/playfair-display-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/main.css?v={{cssV}}">
 <script type="application/ld+json">
 {
@@ -25,6 +30,9 @@
   "name": "KITTY S.r.l.",
   "url": "https://www.kitty.it/",
   "logo": "https://www.kitty.it/img/brand/logo-kitty.png",
+  "image": "https://www.kitty.it/img/og/copertine-lady-cover.jpg",
+  "sameAs": ["https://www.facebook.com/kittyoreficieria/"],
+  "geo": { "@type": "GeoCoordinates", "latitude": 43.4913045, "longitude": 11.8630571 },
   "description": "{{ldDesc}}",
   "telephone": "+39 0575 907004",
   "faxNumber": "+39 0575 910909",
@@ -40,3 +48,4 @@
   }
 }
 </script>
+{{breadcrumbLd}}
