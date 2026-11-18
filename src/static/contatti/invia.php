@@ -1,17 +1,19 @@
 <?php
-// Endpoint del modulo contatti di www.kitty.it
-// - validazione lato server, honeypot + tempo minimo di compilazione (niente CAPTCHA)
-// - salva la richiesta in MySQL (se c'è il file di configurazione) e invia una email a DESTINATARIO
-//   Il modulo risulta "inviato" se almeno una delle due operazioni riesce: una richiesta non va persa
-//   se la posta ha problemi, né se il database non risponde.
-// - risponde JSON se la richiesta arriva via fetch (Accept: application/json), altrimenti reindirizza a /contatti/?esito=...
-// Configurazione database: file kitty-config.php FUORI dalla cartella pubblica (vedi DEPLOY.md e deploy/).
+// Endpoint del modulo contatti di www.kitty.it  (solo email, nessun database)
+//  1) validazione lato server + anti-spam (campo trappola, tempo minimo, limite per IP) senza CAPTCHA
+//  2) email di NOTIFICA a Kitty (DESTINATARIO), con Reply-To = cliente
+//  3) email di CONFERMA grafica al cliente, nella sua lingua (italiano/inglese)
+// risponde JSON se la richiesta arriva via fetch (Accept: application/json), altrimenti reindirizza a /contatti/?esito=...
 declare(strict_types=1);
+define('KITTY_FORM', true);
+require __DIR__ . '/email-template.php';
 
 const DESTINATARIO = 'info@kitty.it';
-const MITTENTE     = 'noreply@kitty.it';   // deve essere un indirizzo del dominio dell'hosting (SPF/DKIM)
+const MITTENTE     = 'noreply@kitty.it';   // deve essere un indirizzo del dominio del server (SPF/DKIM validi)
+const RISPONDI_A   = 'info@kitty.it';      // indirizzo a cui arrivano le risposte del cliente alla conferma
 const TEMPO_MIN    = 4;                    // secondi minimi tra caricamento pagina e invio
 const TEMPO_MAX    = 86400;                // oltre 24 ore il modulo è considerato scaduto
+const MAX_INVII_ORA = 5;                   // richieste massime per indirizzo IP in un'ora
 
 const MSG = [
     'it' => [
@@ -51,75 +53,39 @@ function pulisci(?string $v, int $max): string {
     return mb_substr($v, 0, $max);
 }
 
-// ---------- database (facoltativo) ----------
-function db(): ?PDO {
-    static $pdo = false;
-    if ($pdo !== false) return $pdo;
-    $pdo = null;
-    $candidati = [
-        getenv('KITTY_CONFIG') ?: '',
-        dirname(rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/')) . '/kitty-config.php', // un livello sopra la cartella pubblica
-    ];
-    foreach ($candidati as $percorso) {
-        if ($percorso === '' || !is_file($percorso)) continue;
-        $cfg = require $percorso;
-        $db = is_array($cfg) ? ($cfg['db'] ?? null) : null;
-        if (!is_array($db) || empty($db['dsn'])) return null;
-        try {
-            $pdo = new PDO((string)$db['dsn'], (string)($db['user'] ?? ''), (string)($db['pass'] ?? ''), [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 3,
-            ]);
-        } catch (Throwable $e) {
-            error_log('[kitty-contatti] connessione DB: ' . $e->getMessage());
-            $pdo = null;
-        }
-        return $pdo;
-    }
-    return null;
+/** Limite per IP senza database: un piccolo file nella cartella temporanea del sistema. Restituisce false se superato. */
+function entro_il_limite(): bool {
+    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? 'x');
+    $file = sys_get_temp_dir() . '/kitty-contatti-' . hash('sha256', $ip . '|kitty') . '.json';
+    $ora = time();
+    $fp = @fopen($file, 'c+');
+    if (!$fp) return true;                         // se non si può scrivere, non blocchiamo
+    flock($fp, LOCK_EX);
+    $dati = json_decode((string)stream_get_contents($fp), true);
+    $invii = array_values(array_filter(is_array($dati) ? $dati : [], fn($t) => is_int($t) && $t > $ora - 3600));
+    $ok = count($invii) < MAX_INVII_ORA;
+    if ($ok) $invii[] = $ora;
+    ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode($invii));
+    flock($fp, LOCK_UN); fclose($fp);
+    return $ok;
 }
 
-function salva_richiesta(array $d, string $lang): ?int {
-    $pdo = db();
-    if (!$pdo) return null;
-    try {
-        $st = $pdo->prepare('INSERT INTO richieste_contatti (lingua, azienda, nome, cognome, email, richiesta, consenso_privacy)
-                             VALUES (?, ?, ?, ?, ?, ?, 1)');
-        $st->execute([$lang, $d['azienda'], $d['nome'], $d['cognome'], $d['email'], $d['richiesta']]);
-        return (int)$pdo->lastInsertId();
-    } catch (Throwable $e) {
-        error_log('[kitty-contatti] salvataggio: ' . $e->getMessage());
-        return null;
-    }
+function logo_png(): ?string {
+    $percorso = dirname(__DIR__) . '/img/brand/logo-kitty.png';
+    $dati = is_file($percorso) ? @file_get_contents($percorso) : false;
+    return $dati === false ? null : $dati;
 }
 
-function segna_email_inviata(int $id): void {
-    try {
-        db()?->prepare('UPDATE richieste_contatti SET email_inviata = 1 WHERE id = ?')->execute([$id]);
-    } catch (Throwable $e) {
-        error_log('[kitty-contatti] aggiornamento stato email: ' . $e->getMessage());
-    }
-}
-
-// ---------- email ----------
-function invia_email(array $d, string $lang, ?int $id): bool {
-    $oggetto = 'Richiesta dal sito – ' . $d['azienda'];
-    $corpo = "Nuova richiesta dal modulo contatti di www.kitty.it" . ($id ? " (n. $id)" : '') . "\r\n\r\n"
-           . "Azienda: {$d['azienda']}\r\n"
-           . "Referente: {$d['nome']} {$d['cognome']}\r\n"
-           . "Email: {$d['email']}\r\n\r\n"
-           . "Richiesta:\r\n{$d['richiesta']}\r\n\r\n"
-           . "Lingua del sito: $lang\r\n"
-           . "Consenso privacy: sì – " . date('d/m/Y H:i') . "\r\n";
+function invia(string $a, string $oggetto, array $mime, string $daNome, string $replyTo): bool {
+    [$tipo, $corpo] = $mime;
     $headers = [
-        'From: Sito Kitty <' . MITTENTE . '>',
-        'Reply-To: ' . $d['email'],          // già validata con FILTER_VALIDATE_EMAIL (niente a-capo possibili)
+        'From: ' . mb_encode_mimeheader($daNome, 'UTF-8') . ' <' . MITTENTE . '>',
+        'Reply-To: ' . $replyTo,                       // già validato (niente a-capo possibili)
         'MIME-Version: 1.0',
-        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Type: ' . $tipo,
         'X-Mailer: kitty-contatti',
     ];
-    return mail(DESTINATARIO, mb_encode_mimeheader($oggetto, 'UTF-8'), $corpo, implode("\r\n", $headers));
+    return mail($a, mb_encode_mimeheader($oggetto, 'UTF-8'), $corpo, implode("\r\n", $headers));
 }
 
 // ---------- richiesta ----------
@@ -156,10 +122,36 @@ if (($_POST['privacy'] ?? '') !== '1') $err['privacy'] = $m['privacy'];
 
 if ($err) risposta(false, $err, $vuoleJson);
 
-$id = salva_richiesta($d, $lang);
-$inviata = invia_email($d, $lang, $id);
-if ($inviata && $id !== null) segna_email_inviata($id);
-if (!$inviata) error_log('[kitty-contatti] email non inviata' . ($id ? " (richiesta $id salvata nel database)" : ' e richiesta non salvata'));
+if (!entro_il_limite()) {
+    error_log('[kitty-contatti] limite di invii per IP superato');
+    risposta(false, ['invio' => $m['invio']], $vuoleJson);
+}
 
-$ok = $inviata || $id !== null;     // basta una delle due: la richiesta non è andata persa
-risposta($ok, $ok ? [] : ['invio' => $m['invio']], $vuoleJson);
+$logo = logo_png();
+$quando = date('d/m/Y H:i');
+$tn = KITTY_TESTI['it'];
+
+// 1) notifica a Kitty: se non parte, la richiesta non è stata consegnata -> errore al visitatore
+$notificata = invia(
+    DESTINATARIO,
+    sprintf($tn['oggetto_kitty'], $d['azienda']),
+    email_mime(email_notifica_testo($d, $lang, $quando), email_notifica_html($d, $lang, $quando, $logo !== null), $logo),
+    'Sito Kitty',
+    $d['email']
+);
+if (!$notificata) {
+    error_log('[kitty-contatti] notifica a Kitty non inviata');
+    risposta(false, ['invio' => $m['invio']], $vuoleJson);
+}
+
+// 2) conferma grafica al cliente (se non parte, lo registriamo ma la richiesta è comunque arrivata)
+$conferma = invia(
+    $d['email'],
+    KITTY_TESTI[$lang]['oggetto_cliente'],
+    email_mime(email_cliente_testo($d, $lang), email_cliente_html($d, $lang, $logo !== null), $logo),
+    'Kitty',
+    RISPONDI_A
+);
+if (!$conferma) error_log('[kitty-contatti] conferma al cliente non inviata');
+
+risposta(true, [], $vuoleJson);

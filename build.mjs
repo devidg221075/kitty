@@ -153,8 +153,10 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
 }
 
 // ---------- asset statici ----------
+// niente css/ (è già dentro ogni pagina, salvo INLINE_CSS=0) e niente segnaposto illustrativi nel pacchetto da pubblicare
 for (const dir of ['css', 'js', 'fonts', 'img']) {
-  if (existsSync(join(SRC, dir))) cpSync(join(SRC, dir), join(DIST, dir), { recursive: true });
+  if (dir === 'css' && process.env.INLINE_CSS !== '0') continue;
+  if (existsSync(join(SRC, dir))) cpSync(join(SRC, dir), join(DIST, dir), { recursive: true, filter: (s) => !s.includes(`${sep}img${sep}placeholder`) });
 }
 if (existsSync(join(SRC, 'static'))) cpSync(join(SRC, 'static'), DIST, { recursive: true }); // .htaccess, favicon.ico, ecc.
 

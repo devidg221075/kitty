@@ -1,51 +1,32 @@
-# Messa online di www.kitty.it
+# Messa online di www.kitty.it (Apache + PHP)
 
-## 1. Build
-```bash
-npm run build        # genera dist/ (serve Node 18+; nessuna dipendenza)
-```
-`dist/` è l'unica cartella da pubblicare. Contiene HTML, immagini, `sitemap.xml`, `robots.txt`, `.htaccess` e `contatti/invia.php`.
+## 1. Cosa caricare
+Il contenuto della cartella `dist/` (nello zip `kitty-sito-pubblicazione.zip` è già alla radice): copiarlo **dentro la cartella pubblica** del sito (document root di `www.kitty.it`).
+Attenzione al file nascosto `.htaccess`: deve finire nella stessa cartella di `index.html` (alcuni programmi FTP nascondono i file che iniziano con il punto).
 
 ## 2. Requisiti del server
-- **PHP 8.1+** (provato con 8.3; il codice non usa nulla di deprecato) con le estensioni `mbstring` e `pdo_mysql`. Serve solo per `contatti/invia.php`.
-- Un MTA per `mail()` (Postfix/Exim/sendmail), oppure sostituire `invia_email()` con un invio SMTP.
-- **MySQL 8 / MariaDB 10.6+** con l'estensione PHP `pdo_mysql`.
-- HTTPS attivo (certificato) e DNS di `kitty.it` e `www.kitty.it` sul server.
-- **Apache**: abilitare `mod_rewrite`, `mod_headers`, `mod_expires`, `mod_deflate` e `AllowOverride All` per la cartella (usa `.htaccess`).
-  **Nginx**: usare `deploy/nginx-kitty.conf` (equivalente dell'`.htaccess`; adattare certificati e socket PHP-FPM).
+- **Apache 2.4** con `mod_rewrite`, `mod_headers`, `mod_expires`, `mod_deflate` e `AllowOverride All` per la cartella del sito (il file `.htaccess` fa redirect, cache e compressione).
+- **PHP 8.1+** (provato con 8.3; il codice non usa nulla di deprecato) con l'estensione `mbstring`. Serve solo per `contatti/invia.php`.
+- Un MTA configurato per la funzione `mail()` di PHP (Postfix, Exim o sendmail).
+- HTTPS attivo e DNS di `kitty.it` e `www.kitty.it` puntati sul server. L'`.htaccess` porta tutto su `https://www.kitty.it`.
+- Nessun database.
 
-## 3. Modulo contatti e database MySQL
-Ogni richiesta viene **salvata in MySQL e inviata per email** a `info@kitty.it`. Il modulo risulta inviato se almeno una delle due cose riesce: una richiesta non si perde se la posta ha problemi, né se il database non risponde (l'errore va nel log di PHP).
+## 3. Modulo contatti (solo email)
+Il modulo non salva nulla: invia **due email**.
+1. **Notifica a Kitty** (`info@kitty.it`): riepilogo della richiesta in italiano; rispondendo, la risposta arriva direttamente al cliente.
+2. **Conferma al cliente**: email grafica (logo, riepilogo, contatti, pulsante verso il sito), nella lingua del sito da cui ha scritto (italiano o inglese). Le risposte del cliente arrivano a `info@kitty.it`.
 
-**a) Database** (come utente amministratore MySQL; password a scelta):
-```sql
-CREATE DATABASE kitty CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'kitty_web'@'localhost'   IDENTIFIED BY 'PASSWORD_SITO';       -- usato dal sito: solo inserimento
-CREATE USER 'kitty_admin'@'localhost' IDENTIFIED BY 'PASSWORD_GESTIONE';    -- per leggere/esportare le richieste
-```
-```bash
-mysql -u root -p kitty < deploy/schema.sql
-```
-Poi i permessi (sono elencati anche in `deploy/schema.sql`):
-```sql
-GRANT INSERT ON kitty.richieste_contatti TO 'kitty_web'@'localhost';
-GRANT SELECT (id) ON kitty.richieste_contatti TO 'kitty_web'@'localhost';
-GRANT UPDATE (email_inviata) ON kitty.richieste_contatti TO 'kitty_web'@'localhost';
-GRANT SELECT, DELETE ON kitty.richieste_contatti TO 'kitty_admin'@'localhost';
-```
-L'utente del sito non può leggere le richieste già salvate (solo inserirne): se il sito venisse compromesso, i dati dei clienti non si leggono.
+Se la notifica a Kitty non parte, il visitatore vede un errore e può riprovare. Se parte la notifica ma non la conferma, la richiesta risulta comunque inviata (l'errore va nel log di PHP).
 
-**b) File di configurazione, fuori dalla cartella pubblica.** Copiare `deploy/kitty-config.sample.php` come `kitty-config.php` **un livello sopra `dist/`** (es. `/var/www/kitty/kitty-config.php` se il sito è in `/var/www/kitty/dist`) e mettere la password di `kitty_web`. Se il file non c'è, il modulo funziona comunque solo con l'email. In alternativa si può indicare un altro percorso con la variabile d'ambiente `KITTY_CONFIG`.
+In cima a `contatti/invia.php` ci sono le impostazioni:
+- `DESTINATARIO` = `info@kitty.it` (dove arrivano le richieste)
+- `MITTENTE` = `noreply@kitty.it` (**deve essere un indirizzo del dominio del server**, con SPF e DKIM validi, altrimenti le email finiscono in spam)
+- `RISPONDI_A` = `info@kitty.it` (dove arrivano le risposte del cliente alla conferma)
+- `MAX_INVII_ORA` = 5 richieste per indirizzo IP all'ora (protezione dagli abusi)
 
-**c) Pulizia automatica a 12 mesi.** L'informativa privacy dichiara una conservazione massima di 12 mesi per le richieste di contatto: attivare `deploy/pulizia-12-mesi.sql` (evento MySQL, richiede `event_scheduler=ON`) oppure un cron con la stessa `DELETE`.
-
-**d) Email.** In `contatti/invia.php` controllare le due costanti in cima: `DESTINATARIO` (`info@kitty.it`) e `MITTENTE` (`noreply@kitty.it`, deve appartenere al dominio con SPF/DKIM validi, altrimenti la posta finisce in spam). Provare un invio dal sito.
-
-**e) Leggere le richieste:**
-```bash
-mysql -u kitty_admin -p kitty -e "SELECT id, creata_il, azienda, nome, cognome, email, richiesta, email_inviata FROM richieste_contatti ORDER BY id DESC"
-```
-(`email_inviata = 0` significa che la richiesta è stata salvata ma l'email non è partita.)
+Il look delle email è in `contatti/email-template.php` (colori, testi italiano/inglese).
+**Prova dopo la pubblicazione:** inviare una richiesta dal sito con un indirizzo vostro, e controllare che arrivino entrambe le email (anche nella cartella spam).
+Nota privacy: l'informativa dichiara max 12 mesi di conservazione delle richieste di contatto; ora i dati restano solo nelle caselle email di Kitty, quindi la regola riguarda la vostra posta.
 
 ## 4. Dopo la pubblicazione
 1. Aprire https://www.kitty.it/ e https://www.kitty.it/en/ e controllare il selettore IT | EN.
