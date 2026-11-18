@@ -1,0 +1,44 @@
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="site-header__logo" href="/en/" aria-label="Kitty – Home"><img src="/img/brand/logo-kitty.png" alt="Kitty" width="293" height="182"></a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu-principale" aria-label="Open menu">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path class="nav-toggle__open" d="M4 7h16M4 12h16M4 17h10"/><path class="nav-toggle__close" d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+
+    <nav class="nav" id="menu-principale" aria-label="Main menu">
+      <ul class="nav__list">
+        <li><a class="nav__link" href="/en/" {{cur:/en/}}>Home</a></li>
+        <li class="has-sub">
+          <a class="nav__link" href="/en/about-kitty/" {{cur:/en/about-kitty/}}>About Kitty</a>
+          <button class="sub-toggle" type="button" aria-expanded="false" aria-label="Show About Kitty submenu"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5 5 6.5 8 3.5"/></svg></button>
+          <ul class="sub">
+            <li><a href="/en/design/" {{cur:/en/design/}}>Design</a></li>
+            <li><a href="/en/progettazione/" {{cur:/en/progettazione/}}>Engineering</a></li>
+            <li><a href="/en/lavorazione/" {{cur:/en/lavorazione/}}>Processing</a></li>
+            <li><a href="/en/produzione/" {{cur:/en/produzione/}}>Production</a></li>
+            <li><a href="/en/premiere-2016/" {{cur:/en/premiere-2016/}}>Premiere 2016</a></li>
+            <li><a href="/en/premiere-2019-menzione-speciale/" {{cur:/en/premiere-2019-menzione-speciale/}}>Premiere 2019 – Special Mention</a></li>
+          </ul>
+        </li>
+        <li><a class="nav__link" href="/en/le-fiere/" {{cur:/en/le-fiere/}}>Trade Fairs</a></li>
+        <li class="has-sub">
+          <a class="nav__link" href="/en/collezioni/" {{cur:/en/collezioni/}}>Collections</a>
+          <button class="sub-toggle" type="button" aria-expanded="false" aria-label="Show Collections submenu"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5 5 6.5 8 3.5"/></svg></button>
+          <ul class="sub">
+            <li><a href="/en/lady/" {{cur:/en/lady/}}>Lady</a></li>
+            <li><a href="/en/baby/" {{cur:/en/baby/}}>Baby</a></li>
+            <li><a href="/en/fantasy/" {{cur:/en/fantasy/}}>Fantasy</a></li>
+            <li><a href="/en/full-gold/" {{cur:/en/full-gold/}}>Full Gold</a></li>
+            <li><a href="/en/lightness/" {{cur:/en/lightness/}}>Lightness</a></li>
+            <li><a href="/en/baby-bangles/" {{cur:/en/baby-bangles/}}>Baby Bangles</a></li>
+            <li><a href="/en/baby-pins/" {{cur:/en/baby-pins/}}>Baby Pins</a></li>
+            <li><a href="/en/rosari/" {{cur:/en/rosari/}}>Rosaries</a></li>
+          </ul>
+        </li>
+        <li><a class="nav__link" href="/en/contatti/" {{cur:/en/contatti/}}>Contact</a></li>
+      </ul>
+      <p class="lang" aria-label="Language"><a href="{{altHref}}" lang="it" hreflang="it" title="Versione italiana">IT</a><span aria-hidden="true">|</span><span lang="en" aria-current="true">EN</span></p>
+    </nav>
+  </div>
+</header>

@@ -1,30 +1,63 @@
+/* Kitty – testi dell'interfaccia per lingua (la lingua è quella della pagina: <html lang>) */
+const KITTY_T = {
+  it: {
+    menuClose: 'Chiudi menu', menuOpen: 'Apri menu',
+    goSlide: (n, tot) => `Vai alla slide ${n} di ${tot}`,
+    resume: 'Riprendi scorrimento automatico', pause: 'Metti in pausa lo scorrimento automatico',
+    slideLive: (n, tot, alt) => `Slide ${n} di ${tot}: ${alt}`,
+    gallery: 'Galleria immagini', close: 'Chiudi', prev: 'Foto precedente', next: 'Foto successiva',
+    eAzienda: 'Indica il nome dell’azienda.', eNome: 'Indica il tuo nome.', eCognome: 'Indica il tuo cognome.',
+    eEmail: 'Inserisci un indirizzo email valido.', eEmail2: 'Le due email non coincidono.',
+    eRichiesta: 'Descrivi la tua richiesta (almeno 10 caratteri).', ePrivacy: 'Per inviare la richiesta serve il consenso al trattamento dei dati.',
+    check: (n) => `Controlla i campi evidenziati (${n}).`,
+    sent: 'Grazie! La tua richiesta è stata inviata: ti risponderemo al più presto.',
+    fail: 'Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.',
+  },
+  en: {
+    menuClose: 'Close menu', menuOpen: 'Open menu',
+    goSlide: (n, tot) => `Go to slide ${n} of ${tot}`,
+    resume: 'Resume automatic scrolling', pause: 'Pause automatic scrolling',
+    slideLive: (n, tot, alt) => `Slide ${n} of ${tot}: ${alt}`,
+    gallery: 'Image gallery', close: 'Close', prev: 'Previous photo', next: 'Next photo',
+    eAzienda: 'Enter your company name.', eNome: 'Enter your first name.', eCognome: 'Enter your last name.',
+    eEmail: 'Enter a valid email address.', eEmail2: 'The two email addresses do not match.',
+    eRichiesta: 'Describe your request (at least 10 characters).', ePrivacy: 'To send your request we need your consent to the processing of your data.',
+    check: (n) => `Please check the highlighted fields (${n}).`,
+    sent: 'Thank you! Your request has been sent: we will reply as soon as possible.',
+    fail: 'The message could not be sent. Please try again or write to info@kitty.it.',
+  },
+};
+let T = KITTY_T[document.documentElement.lang === 'en' ? 'en' : 'it'];
+
 /* Kitty – JS vanilla: menu mobile, sottomenu, slider hero */
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
-  // ---- Menu mobile ----
-  const toggle = document.querySelector('.nav-toggle');
-  const nav = document.getElementById('menu-principale');
+  // ---- Menu mobile + sottomenu (riesegibile: initNav() si lega all'header presente) ----
+  let toggle, nav, subs = [];
   const setNav = (open) => {
     toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Chiudi menu' : 'Apri menu');
+    toggle.setAttribute('aria-label', open ? T.menuClose : T.menuOpen);
     nav.classList.toggle('is-open', open);
   };
-  toggle?.addEventListener('click', () => setNav(toggle.getAttribute('aria-expanded') !== 'true'));
-
-  // ---- Sottomenu (click/tastiera; su desktop anche hover via CSS) ----
-  const subs = [...document.querySelectorAll('.has-sub')];
   const setSub = (li, open) => {
     li.classList.toggle('is-open', open);
     li.querySelector('.sub-toggle').setAttribute('aria-expanded', String(open));
   };
-  subs.forEach((li) => {
-    li.querySelector('.sub-toggle').addEventListener('click', () => {
-      const open = !li.classList.contains('is-open');
-      subs.forEach((o) => setSub(o, false));
-      setSub(li, open);
+  const initNav = () => {
+    toggle = document.querySelector('.nav-toggle');
+    nav = document.getElementById('menu-principale');
+    subs = [...document.querySelectorAll('.has-sub')];
+    toggle?.addEventListener('click', () => setNav(toggle.getAttribute('aria-expanded') !== 'true'));
+    subs.forEach((li) => {
+      li.querySelector('.sub-toggle').addEventListener('click', () => {
+        const open = !li.classList.contains('is-open');
+        subs.forEach((o) => setSub(o, false));
+        setSub(li, open);
+      });
     });
-  });
+  };
+  initNav();
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.has-sub')) subs.forEach((o) => setSub(o, false));
   });
@@ -49,7 +82,7 @@
     const dots = slides.map((_, n) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.setAttribute('aria-label', `Vai alla slide ${n + 1} di ${slides.length}`);
+      b.setAttribute('aria-label', T.goSlide(n + 1, slides.length));
       b.innerHTML = '<span class="dot"></span>';
       b.addEventListener('click', () => go(n));
       navBox.appendChild(b);
@@ -60,7 +93,7 @@
     pauseBtn.className = 'pause';
     navBox.appendChild(pauseBtn);
     const paintPause = () => {
-      pauseBtn.setAttribute('aria-label', paused ? 'Riprendi scorrimento automatico' : 'Metti in pausa lo scorrimento automatico');
+      pauseBtn.setAttribute('aria-label', paused ? T.resume : T.pause);
       pauseBtn.innerHTML = paused
         ? '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z"/></svg>'
         : '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5h3v11H3zM8 1.5h3v11H8z"/></svg>';
@@ -74,7 +107,7 @@
         s.setAttribute('aria-hidden', String(k !== i));
       });
       dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
-      if (announce && live) live.textContent = `Slide ${i + 1} di ${slides.length}: ${slides[i].querySelector('img')?.alt || ''}`;
+      if (announce && live) live.textContent = T.slideLive(i + 1, slides.length, slides[i].querySelector('img')?.alt || '');
       schedule();
     }
     function schedule() {
@@ -96,7 +129,7 @@
     go(0, false);
   });
   initSliders();
-  window.KittyPage = { ...(window.KittyPage || {}), sliders: initSliders };
+  window.KittyPage = { ...(window.KittyPage || {}), sliders: initSliders, nav: initNav, setLang: () => { T = KITTY_T[document.documentElement.lang === 'en' ? 'en' : 'it']; } };
 })();
 
 /* Kitty – lightbox gallerie + modulo contatti */
@@ -107,12 +140,12 @@ function kittyInitGalleryAndForm() {
   if (links.length && typeof HTMLDialogElement === 'function') {
     const dlg = document.createElement('dialog');
     dlg.className = 'lb';
-    dlg.setAttribute('aria-label', 'Galleria immagini');
+    dlg.setAttribute('aria-label', T.gallery);
     dlg.innerHTML =
-      '<button class="lb__btn lb__close" type="button" aria-label="Chiudi"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4l12 12M16 4 4 16"/></svg></button>' +
-      '<button class="lb__btn lb__prev" type="button" aria-label="Foto precedente"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3 5 8l5 5"/></svg></button>' +
+      '<button class="lb__btn lb__close" type="button" aria-label="' + T.close + '"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4l12 12M16 4 4 16"/></svg></button>' +
+      '<button class="lb__btn lb__prev" type="button" aria-label="' + T.prev + '"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3 5 8l5 5"/></svg></button>' +
       '<figure class="lb__fig"><img class="lb__img" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA="><figcaption class="lb__cap" aria-live="polite"></figcaption></figure>' +
-      '<button class="lb__btn lb__next" type="button" aria-label="Foto successiva"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l5 5-5 5"/></svg></button>';
+      '<button class="lb__btn lb__next" type="button" aria-label="' + T.next + '"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l5 5-5 5"/></svg></button>';
     document.body.appendChild(dlg);
     const img = dlg.querySelector('.lb__img');
     const cap = dlg.querySelector('.lb__cap');
@@ -163,13 +196,13 @@ function kittyInitGalleryAndForm() {
   const validate = () => {
     const v = (n) => form.elements[n].value.trim();
     const e = {};
-    if (!v('azienda')) e.azienda = 'Indica il nome dell’azienda.';
-    if (!v('nome')) e.nome = 'Indica il tuo nome.';
-    if (!v('cognome')) e.cognome = 'Indica il tuo cognome.';
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) e.email = 'Inserisci un indirizzo email valido.';
-    else if (v('email').toLowerCase() !== v('email2').toLowerCase()) e.email2 = 'Le due email non coincidono.';
-    if (v('richiesta').length < 10) e.richiesta = 'Descrivi la tua richiesta (almeno 10 caratteri).';
-    if (!form.elements.privacy.checked) e.privacy = 'Per inviare la richiesta serve il consenso al trattamento dei dati.';
+    if (!v('azienda')) e.azienda = T.eAzienda;
+    if (!v('nome')) e.nome = T.eNome;
+    if (!v('cognome')) e.cognome = T.eCognome;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) e.email = T.eEmail;
+    else if (v('email').toLowerCase() !== v('email2').toLowerCase()) e.email2 = T.eEmail2;
+    if (v('richiesta').length < 10) e.richiesta = T.eRichiesta;
+    if (!form.elements.privacy.checked) e.privacy = T.ePrivacy;
     return e;
   };
   const showErrors = (errs) => {
@@ -177,7 +210,7 @@ function kittyInitGalleryAndForm() {
     Object.entries(errs).forEach(([k, m]) => setErr(k, m));
     const first = Object.keys(errs).find((k) => form.elements[k]);
     if (first) form.elements[first].focus();
-    say(`Controlla i campi evidenziati (${Object.keys(errs).length}).`, false);
+    say(T.check(Object.keys(errs).length), false);
     if (first) form.elements[first].focus();
   };
 
@@ -191,18 +224,18 @@ function kittyInitGalleryAndForm() {
     try {
       const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
       const data = await res.json();
-      if (data.ok) { form.reset(); form.querySelector('#ts').value = String(Date.now()); say('Grazie! La tua richiesta è stata inviata: ti risponderemo al più presto.', true); }
+      if (data.ok) { form.reset(); form.querySelector('#ts').value = String(Date.now()); say(T.sent, true); }
       else if (data.errori && !data.errori.invio) showErrors(data.errori);
-      else say(data.errori?.invio || 'Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.', false);
+      else say(data.errori?.invio || T.fail, false);
     } catch {
-      say('Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.', false);
+      say(T.fail, false);
     } finally { btn.disabled = false; }
   });
 
   // esito di un invio senza JavaScript (redirect dal server)
   const esito = new URLSearchParams(location.search).get('esito');
-  if (esito === 'ok') say('Grazie! La tua richiesta è stata inviata: ti risponderemo al più presto.', true);
-  if (esito === 'errore') say('Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.', false);
+  if (esito === 'ok') say(T.sent, true);
+  if (esito === 'errore') say(T.fail, false);
 }
 kittyInitGalleryAndForm();
 window.KittyPage = { ...(window.KittyPage || {}), galleryAndForm: kittyInitGalleryAndForm };

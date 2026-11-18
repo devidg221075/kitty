@@ -2,6 +2,10 @@
 Options -Indexes
 DirectoryIndex index.html
 ErrorDocument 404 /404.html
+# 404 inglese per le pagine sotto /en/ (Apache 2.4)
+<If "%{REQUEST_URI} =~ m#^/en/#">
+ErrorDocument 404 /en/404.html
+</If>
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
@@ -11,9 +15,9 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} !^www\. [NC]
 RewriteRule ^ https://www.kitty.it%{REQUEST_URI} [L,R=301]
 
-# 2) vecchia versione inglese: finché non c'è l'EN, /?lang=en -> home
+# 2) vecchia versione inglese (WPML): /?lang=en -> /en/
 RewriteCond %{QUERY_STRING} (^|&)lang=en(&|$) [NC]
-RewriteRule ^$ /? [L,R=301]
+RewriteRule ^$ /en/? [L,R=301]
 
 # 3) vecchi tag del portfolio WordPress -> collezione corrispondente
 RewriteRule ^portfolio-tag/lady/?$          /lady/         [L,R=301]

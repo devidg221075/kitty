@@ -10,6 +10,25 @@ const MITTENTE     = 'noreply@kitty.it';   // deve essere un indirizzo del domin
 const TEMPO_MIN    = 4;                    // secondi minimi tra caricamento pagina e invio
 const TEMPO_MAX    = 86400;                // oltre 24 ore il modulo è considerato scaduto
 
+const MSG = [
+    'it' => [
+        'azienda' => 'Indica il nome dell’azienda.', 'nome' => 'Indica il tuo nome.', 'cognome' => 'Indica il tuo cognome.',
+        'email' => 'Inserisci un indirizzo email valido.', 'email2' => 'Le due email non coincidono.',
+        'richiesta' => 'Descrivi la tua richiesta (almeno 10 caratteri).',
+        'privacy' => 'Per inviare la richiesta serve il consenso al trattamento dei dati.',
+        'invio' => 'Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.',
+    ],
+    'en' => [
+        'azienda' => 'Enter your company name.', 'nome' => 'Enter your first name.', 'cognome' => 'Enter your last name.',
+        'email' => 'Enter a valid email address.', 'email2' => 'The two email addresses do not match.',
+        'richiesta' => 'Describe your request (at least 10 characters).',
+        'privacy' => 'To send your request we need your consent to the processing of your data.',
+        'invio' => 'The message could not be sent. Please try again or write to info@kitty.it.',
+    ],
+];
+
+
+$lang = (($_POST['lang'] ?? '') === 'en') ? 'en' : 'it';
 $vuoleJson = isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json');
 
 function risposta(bool $ok, array $errori, bool $json, string $codice = ''): never {
@@ -18,7 +37,8 @@ function risposta(bool $ok, array $errori, bool $json, string $codice = ''): nev
         http_response_code($ok ? 200 : ($codice === 'spam' ? 200 : 422));
         echo json_encode(['ok' => $ok, 'errori' => $errori], JSON_UNESCAPED_UNICODE);
     } else {
-        header('Location: /contatti/?esito=' . ($ok ? 'ok' : 'errore') . '#esito', true, 303);
+        global $lang;
+        header('Location: ' . ($lang === 'en' ? '/en/contatti/' : '/contatti/') . '?esito=' . ($ok ? 'ok' : 'errore') . '#esito', true, 303);
     }
     exit;
 }
@@ -51,13 +71,14 @@ $d = [
 ];
 
 $err = [];
-if ($d['azienda'] === '')   $err['azienda'] = 'Indica il nome dell’azienda.';
-if ($d['nome'] === '')      $err['nome'] = 'Indica il tuo nome.';
-if ($d['cognome'] === '')   $err['cognome'] = 'Indica il tuo cognome.';
-if (!filter_var($d['email'], FILTER_VALIDATE_EMAIL)) $err['email'] = 'Inserisci un indirizzo email valido.';
-elseif (strcasecmp($d['email'], $d['email2']) !== 0) $err['email2'] = 'Le due email non coincidono.';
-if (mb_strlen($d['richiesta']) < 10) $err['richiesta'] = 'Descrivi la tua richiesta (almeno 10 caratteri).';
-if (($_POST['privacy'] ?? '') !== '1') $err['privacy'] = 'Per inviare la richiesta serve il consenso al trattamento dei dati.';
+$m = MSG[$lang];
+if ($d['azienda'] === '')   $err['azienda'] = $m['azienda'];
+if ($d['nome'] === '')      $err['nome'] = $m['nome'];
+if ($d['cognome'] === '')   $err['cognome'] = $m['cognome'];
+if (!filter_var($d['email'], FILTER_VALIDATE_EMAIL)) $err['email'] = $m['email'];
+elseif (strcasecmp($d['email'], $d['email2']) !== 0) $err['email2'] = $m['email2'];
+if (mb_strlen($d['richiesta']) < 10) $err['richiesta'] = $m['richiesta'];
+if (($_POST['privacy'] ?? '') !== '1') $err['privacy'] = $m['privacy'];
 
 if ($err) risposta(false, $err, $vuoleJson);
 
@@ -68,7 +89,7 @@ function invia_email(array $d): bool {
            . "Referente: {$d['nome']} {$d['cognome']}\r\n"
            . "Email: {$d['email']}\r\n\r\n"
            . "Richiesta:\r\n{$d['richiesta']}\r\n\r\n"
-           . "Consenso privacy: sì – " . date('d/m/Y H:i') . "\r\n";
+           . "Lingua del sito: " . ($GLOBALS['lang'] ?? 'it') . "\r\nConsenso privacy: sì – " . date('d/m/Y H:i') . "\r\n";
     $headers = [
         'From: Sito Kitty <' . MITTENTE . '>',
         'Reply-To: ' . $d['email'],          // già validata con FILTER_VALIDATE_EMAIL (niente a-capo possibili)
@@ -80,4 +101,4 @@ function invia_email(array $d): bool {
 }
 
 $inviata = invia_email($d);
-risposta($inviata, $inviata ? [] : ['invio' => 'Non è stato possibile inviare il messaggio. Riprova o scrivi a info@kitty.it.'], $vuoleJson);
+risposta($inviata, $inviata ? [] : ['invio' => $m['invio']], $vuoleJson);

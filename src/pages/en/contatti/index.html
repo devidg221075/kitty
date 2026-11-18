@@ -1,0 +1,70 @@
+---
+title: Contact – Kitty, goldsmiths in Arezzo
+description: Contact KITTY S.r.l., Via La Chianicella 50/A, Ceciliano, Arezzo, Italy. Phone +39 0575 907004, email info@kitty.it, request form.
+kicker: We are in Arezzo
+h1: Contact
+lead: For information about the collections, fill in the form or give us a call.
+image: /img/foto/copertine/lady-cover-960.webp
+---
+{{> page-head}}
+<section class="wrap contact" aria-label="Contact">
+  <div class="contact__info">
+    <h2 class="h2">Where we are</h2>
+    <ul class="ccards">
+      <li class="ccard">
+        <span class="ccard__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+        <div class="ccard__body"><span class="ccard__label">Address</span>
+          <address>KITTY S.r.l.<br>Via La Chianicella, 50/A<br>Loc. Ceciliano – 52100 Arezzo (AR), Italy</address></div>
+      </li>
+      <li class="ccard">
+        <span class="ccard__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+        <div class="ccard__body"><span class="ccard__label">Phone</span>
+          <a class="ccard__main" href="tel:+390575907004">+39 0575 907004</a>
+          <span class="ccard__sub">Fax +39 0575 910909</span></div>
+      </li>
+      <li class="ccard">
+        <span class="ccard__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="m3 7 9 7 9-7"/></svg></span>
+        <div class="ccard__body"><span class="ccard__label">Email</span>
+          <a class="ccard__main" href="mailto:info@kitty.it">info@kitty.it</a></div>
+      </li>
+    </ul>
+
+    <div class="map" role="group" aria-label="Company location">
+      <a class="btn btn--ghost" href="https://www.google.com/maps/search/?api=1&amp;query=Via+La+Chianicella+50%2FA%2C+52100+Arezzo" target="_blank" rel="noopener">Open in Google Maps <span class="sr-only">(opens in a new tab)</span> <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
+      <p class="map__note">Google Maps only opens when you click: nothing is shared with Google before that.</p>
+    </div>
+
+    <dl class="legal-data" aria-label="Company details">
+      <div><dt>VAT no. / Tax code</dt><dd>01356350510</dd></div>
+      <div><dt>Companies Register no.</dt><dd>002-13640</dd></div>
+      <div><dt>REA no.</dt><dd>100159</dd></div>
+      <div><dt>Share capital</dt><dd>€ 100,000.00 fully paid</dd></div>
+    </dl>
+  </div>
+
+  <form class="form" id="modulo-contatti" action="/contatti/invia.php" method="post" novalidate aria-labelledby="titolo-modulo">
+    <h2 class="h2" id="titolo-modulo">Send a request</h2>
+    <p class="form__req">Fields marked * are required.</p>
+    <div class="form__status" id="esito" role="status" aria-live="polite" tabindex="-1" hidden></div>
+
+    <div class="field"><label for="azienda">Company *</label><input id="azienda" name="azienda" type="text" autocomplete="organization" required></div>
+    <div class="field-row">
+      <div class="field"><label for="nome">First name *</label><input id="nome" name="nome" type="text" autocomplete="given-name" required></div>
+      <div class="field"><label for="cognome">Last name *</label><input id="cognome" name="cognome" type="text" autocomplete="family-name" required></div>
+    </div>
+    <div class="field"><label for="email">Your email *</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+    <div class="field"><label for="email2">Confirm email *</label><input id="email2" name="email2" type="email" autocomplete="off" required></div>
+    <div class="field"><label for="richiesta">Describe your request *</label><textarea id="richiesta" name="richiesta" rows="6" required></textarea></div>
+
+    <div class="field field--check">
+      <input id="privacy" name="privacy" type="checkbox" value="1" required>
+      <label for="privacy">I have read the <a href="/en/privacy/" target="_blank" rel="noopener">privacy notice<span class="sr-only"> (opens in a new tab)</span></a> and consent to the processing of my data in order to reply to my request. *</label>
+    </div>
+
+    <div class="hp" aria-hidden="true"><label for="sito-web">Do not fill in this field</label><input id="sito-web" name="sito-web" type="text" tabindex="-1" autocomplete="off"></div>
+    <input type="hidden" name="ts" id="ts" value="">
+    <input type="hidden" name="lang" value="en">
+
+    <button class="btn" type="submit">Send request <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h11M9 4l4 4-4 4"/></svg></button>
+  </form>
+</section>

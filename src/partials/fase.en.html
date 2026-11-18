@@ -1,0 +1,15 @@
+{{> page-head}}
+<section class="wrap fase">
+  <!-- DRAFT FOR APPROVAL: proposed text, the current site only has a title and photos for this page -->
+  <p class="fase__text">{{text}}</p>
+  {{gallery:{{slug}}|{{altp}}|gallery--wide}}
+</section>
+<nav class="more wrap" aria-label="The stages of production">
+  <h2 class="more__title">From drawing to jewel</h2>
+  <ul class="more__list">
+    <li><a href="/en/design/" {{cur:/en/design/}}>Design</a></li>
+    <li><a href="/en/progettazione/" {{cur:/en/progettazione/}}>Engineering</a></li>
+    <li><a href="/en/lavorazione/" {{cur:/en/lavorazione/}}>Processing</a></li>
+    <li><a href="/en/produzione/" {{cur:/en/produzione/}}>Production</a></li>
+  </ul>
+</nav>

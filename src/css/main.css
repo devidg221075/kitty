@@ -49,8 +49,10 @@ main:focus{outline:none}
 .sub a{display:block;padding:11px 20px;min-height:44px;font-size:14px;letter-spacing:.04em;color:var(--testo);text-decoration:none}
 .sub a:hover,.sub a[aria-current]{background:var(--blush);color:var(--rosa-testo)}
 .lang{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;letter-spacing:.08em}
-.lang a,.lang__soon{padding:12px 8px;text-decoration:none}
-.lang a{color:var(--rosa-testo)}
+.lang a,.lang [aria-current]{padding:12px 8px;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.lang a{color:var(--testo-3)}
+.lang a:hover{color:var(--rosa-testo)}
+.lang [aria-current]{color:var(--rosa-testo)}
 .lang span[aria-hidden]{color:#CDBFC4}
 .lang__soon{color:var(--testo-3);cursor:default}
 .nav-toggle{display:none;width:48px;height:48px;border:0;background:none;color:var(--testo);cursor:pointer;align-items:center;justify-content:center}

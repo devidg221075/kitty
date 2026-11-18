@@ -41,24 +41,30 @@ function picture(key, alt = '', sizes = '100vw', cls = '', loading = 'lazy') {
 }
 
 // Galleria con lightbox: tutte le foto di una cartella (esclude le copertine)
-function gallery(folder, altPrefix, variant = '') {
+const GAL = {
+  it: { aria: 'Galleria', photo: (i, n) => `foto ${i} di ${n}`, zoom: ' (ingrandisci)' },
+  en: { aria: 'Gallery', photo: (i, n) => `photo ${i} of ${n}`, zoom: ' (enlarge)' },
+};
+function gallery(folder, altPrefix, variant = '', lang = 'it') {
+  const g = GAL[lang] || GAL.it;
   const keys = Object.keys(manifest).filter((k) => k.startsWith(folder + '/') && !k.endsWith('-cover')).sort();
   if (!keys.length) throw new Error(`Nessuna foto per la galleria: ${folder}`);
   const items = keys.map((k, i) => {
     const m = manifest[k];
     const big = m.widths[m.widths.length - 1];
-    const alt = `${altPrefix} – foto ${i + 1} di ${keys.length}`;
-    return `<li><a class="gallery__item" href="/img/foto/${k}-${big}.webp" data-lightbox data-caption="${esc(alt)}">${picture(k, alt, '(min-width:1100px) 280px, (min-width:600px) 33vw, 50vw')}<span class="sr-only"> (ingrandisci)</span></a></li>`;
+    const alt = `${altPrefix} – ${g.photo(i + 1, keys.length)}`;
+    return `<li><a class="gallery__item" href="/img/foto/${k}-${big}.webp" data-lightbox data-caption="${esc(alt)}">${picture(k, alt, '(min-width:1100px) 280px, (min-width:600px) 33vw, 50vw')}<span class="sr-only">${g.zoom}</span></a></li>`;
   });
-  return `<ul class="gallery ${variant}" aria-label="Galleria: ${esc(altPrefix)}">\n${items.join('\n')}\n</ul>`;
+  return `<ul class="gallery ${variant}" aria-label="${g.aria}: ${esc(altPrefix)}">\n${items.join('\n')}\n</ul>`;
 }
 
 function render(tpl, vars, depth = 0) {
   if (depth > 6) throw new Error('Partial annidati troppo in profondità');
   return tpl
     .replace(/\{\{>\s*([\w-]+)\s*\}\}/g, (_, name) => {
-      if (!(name in partials)) throw new Error(`Partial mancante: ${name}`);
-      return render(partials[name], vars, depth + 1);
+      const key = vars.lang === 'en' && `${name}.en` in partials ? `${name}.en` : name;
+      if (!(key in partials)) throw new Error(`Partial mancante: ${name}`);
+      return render(partials[key], vars, depth + 1);
     })
     // variabili (anche quelle del front matter) prima degli helper, così si possono annidare: {{foto:x/{{slug}}-01|...}}
     .replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m))
@@ -67,7 +73,7 @@ function render(tpl, vars, depth = 0) {
     // {{foto:cartella/nome|alt|sizes|classe|lazy}}
     .replace(/\{\{foto:([^}]+)\}\}/g, (_, spec) => picture(...spec.split('|').map((s) => s.trim())))
     // {{gallery:cartella|prefisso alt|variante}}
-    .replace(/\{\{gallery:([^}]+)\}\}/g, (_, spec) => gallery(...spec.split('|').map((s) => s.trim())));
+    .replace(/\{\{gallery:([^}]+)\}\}/g, (_, spec) => { const [f, a, v] = spec.split('|').map((s) => s.trim()); return gallery(f, a, v || '', vars.lang); });
 }
 
 // ---------- pagine ----------
@@ -99,11 +105,22 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
   for (const k of ['title', 'description']) {
     if (!meta[k]) throw new Error(`"${k}" mancante in ${rel}`);
   }
-  const urlPath = rel === 'index.html' ? '/' : rel === '404.html' ? '/404.html' : '/' + rel.replace(/index\.html$/, '');
+  const lang = rel.startsWith('en/') ? 'en' : 'it';
+  const urlPath = rel === 'index.html' ? '/' : rel === '404.html' || rel === 'en/404.html' ? '/' + rel : '/' + rel.replace(/index\.html$/, '');
+  const is404 = rel.endsWith('404.html');
+  const itPath = lang === 'en' ? (urlPath.replace(/^\/en/, '') || '/') : urlPath;
+  const enPath = lang === 'en' ? urlPath : (urlPath === '/' ? '/en/' : '/en' + urlPath);
+  const altHref = is404 ? (lang === 'en' ? '/' : '/en/') : (lang === 'en' ? itPath : enPath);
   const vars = {
     ...meta,
     cssV, jsV,
     path: urlPath,
+    lang,
+    locale: lang === 'en' ? 'en_GB' : 'it_IT',
+    altHref,
+    skip: lang === 'en' ? 'Skip to content' : 'Vai al contenuto',
+    ldDesc: lang === 'en' ? 'Italian goldsmith craft and fine gold jewellery, made in Arezzo, Italy.' : 'Oreficeria e alta gioielleria italiana in oro, prodotta ad Arezzo.',
+    hreflang: is404 ? '' : `<link rel="alternate" hreflang="it" href="${SITE}${itPath}">\n<link rel="alternate" hreflang="en" href="${SITE}${enPath}">\n<link rel="alternate" hreflang="x-default" href="${SITE}${itPath}">`,
     title: meta.title,
     description: meta.description,
     canonical: SITE + urlPath,
@@ -119,7 +136,7 @@ for (const file of walk(join(SRC, 'pages')).filter((f) => f.endsWith('.html'))) 
   const out = join(DIST, rel);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, html);
-  pages.push({ urlPath, noindex: /noindex/.test(vars.robots) });
+  pages.push({ urlPath, lang, itPath, enPath, noindex: /noindex/.test(vars.robots) });
 }
 
 // ---------- asset statici ----------
@@ -130,10 +147,15 @@ if (existsSync(join(SRC, 'static'))) cpSync(join(SRC, 'static'), DIST, { recursi
 
 // ---------- sitemap + robots ----------
 const today = new Date().toISOString().slice(0, 10);
+const known = new Set(pages.map((p) => p.urlPath));
 writeFileSync(join(DIST, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
   pages.filter((p) => !p.noindex).sort((a, b) => a.urlPath.localeCompare(b.urlPath))
-    .map((p) => `  <url><loc>${SITE}${p.urlPath}</loc><lastmod>${today}</lastmod></url>`).join('\n') + `\n</urlset>\n`);
+    .map((p) => {
+      const alts = known.has(p.itPath) && known.has(p.enPath)
+        ? `\n    <xhtml:link rel="alternate" hreflang="it" href="${SITE}${p.itPath}"/>\n    <xhtml:link rel="alternate" hreflang="en" href="${SITE}${p.enPath}"/>` : '';
+      return `  <url><loc>${SITE}${p.urlPath}</loc><lastmod>${today}</lastmod>${alts}</url>`;
+    }).join('\n') + `\n</urlset>\n`);
 writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
 
 // ---------- controllo link interni ----------
@@ -180,7 +202,7 @@ if (args.has('--serve')) {
     let f = join(DIST, p);
     if (!f.startsWith(DIST)) { res.writeHead(403); return res.end(); }
     if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
-    if (!existsSync(f)) { res.writeHead(404, { 'content-type': types['.html'] }); return res.end(readFileSync(join(DIST, '404.html'), 'utf8')); }
+    if (!existsSync(f)) { res.writeHead(404, { 'content-type': types['.html'] }); return res.end(readFileSync(join(DIST, p.startsWith('/en/') ? 'en/404.html' : '404.html'), 'utf8')); }
     res.writeHead(200, { 'content-type': types[extname(f)] || 'application/octet-stream' });
     createReadStream(f).pipe(res);
   }).listen(port, () => console.log(`\nServer locale: http://localhost:${port}`));
